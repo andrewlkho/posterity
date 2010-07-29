@@ -18,9 +18,12 @@ def parse_node(item):
             dict[field] = item.getElementsByTagName(field)[0].firstChild.data
     return dict
 
-def retrieve_rss(url):
-    """Temporary stub function to retrieve RSS feed and print information."""
-    # Retrive the Archive RSS feed
+def fetch_via_rss(url):
+    """Take the url to the instapaper Archive RSS feed (this will change in the 
+    future) and return a list containing Node objects.  Each object in the list
+    represents a single <item> in the RSS feed.
+    """
+    # Retrieve the Archive RSS feed
     try:
         xml_object = urllib.urlopen(url)
     except:
@@ -29,8 +32,9 @@ def retrieve_rss(url):
     # Create a Document
     dom = xml.dom.minidom.parse(xml_object)
 
-    for item in dom.getElementsByTagName('item'):
-        print repr(parse_node(item))
+    # Return the list
+    return dom.getElementsByTagName('item')
+
 
 def main():
     instapaper_archive_rss = "YOUR INSTAPAPER ARCHIVE FEED"
@@ -52,7 +56,8 @@ def main():
             usage()
             sys.exit()
         elif opt in ("-r", "--rss"):
-            retrieve_rss(instapaper_archive_rss)
+            for item in fetch_via_rss(instapaper_archive_rss):
+                print repr(parse_node(item))
 
 if __name__ == "__main__":
     main()
