@@ -2,12 +2,12 @@
 
 import sys
 import getopt
+import re
 import urllib
 import urllib2
 import cookielib
 import xml.dom.minidom
 
-instapaper_archive_rss = ""
 instapaper_username = ""
 instapaper_password = ""
 
@@ -40,22 +40,26 @@ def parse_node(item):
             dict[field] = item.getElementsByTagName(field)[0].firstChild.data
     return dict
 
-def fetch_via_rss(url):
-    """Take the url to the instapaper Archive RSS feed (this will change in the 
-    future) and return a list containing Node objects.  Each object in the list
-    represents a single <item> in the RSS feed.
+def fetch_via_rss():
+    """Fetch the instapaper Archive RSS feed and return a list containing Node
+    objects.  Each object in the list represents a single <item> in the RSS
+    feed.
     """
-    # Retrieve the Archive RSS feed
+    # Find out the URL to the RSS feed and store it in rss_url
     try:
-        xml_object = urllib.urlopen(url)
+        archive_page = urllib2.urlopen("http://www.instapaper.com/archive")
     except:
-        print "There was an error retrieving the RSS feed"
+        return False
+    rss_regex = r'"(http://www\.instapaper\.com/archive/rss/[^"]*)"'
+    rss_url = re.search(rss_regex, archive_page.read()).group(1)
 
-    # Create a Document
-    dom = xml.dom.minidom.parse(xml_object)
-
-    # Return the list
-    return dom.getElementsByTagName('item')
+    # Return a list of Node objects, each representing an <item>
+    try:
+        rss = urllib2.urlopen(rss_url)
+    except:
+        return False
+    rss_dom = xml.dom.minidom.parse(rss)
+    return rss_dom.getElementsByTagName('item')
 
 def main():
     # Parse arguments with getopt
@@ -80,6 +84,8 @@ def main():
             usage()
             sys.exit()
         elif opt in ("-r", "--rss"):
+            login(instapaper_username, instapaper_password)
+            fetch_via_rss()
             pass
 
 if __name__ == "__main__":
