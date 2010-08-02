@@ -5,8 +5,10 @@ import getopt
 import urllib
 import xml.dom.minidom
 
+instapaper_archive_rss = ""
+
 def usage():
-    print "Usage"
+    pass
 
 def parse_node(item):
     """Take a node object representing a single <item> in the Instapaper RSS 
@@ -35,10 +37,7 @@ def fetch_via_rss(url):
     # Return the list
     return dom.getElementsByTagName('item')
 
-
 def main():
-    instapaper_archive_rss = "YOUR INSTAPAPER ARCHIVE FEED"
-
     # Parse arguments with getopt
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hr", ["help", "rss"])
@@ -56,8 +55,7 @@ def main():
             usage()
             sys.exit()
         elif opt in ("-r", "--rss"):
-            for item in fetch_via_rss(instapaper_archive_rss):
-                print repr(parse_node(item))
+            pass
 
 if __name__ == "__main__":
     main()
