@@ -7,6 +7,7 @@ import urllib
 import urllib2
 import cookielib
 import xml.dom.minidom
+import csv
 
 instapaper_username = ""
 instapaper_password = ""
@@ -61,10 +62,41 @@ def fetch_via_rss():
     rss_dom = xml.dom.minidom.parse(rss)
     return rss_dom.getElementsByTagName('item')
 
+def fetch_via_export():
+    """Fetch the CSV export file and return a list of dictionaries, where each 
+    dictionary represents a single line in the CSV file (i.e. a single saved
+    article).
+    """
+    # Find out form_key
+    try:
+        archive_page = urllib2.urlopen("http://www.instapaper.com/archive")
+    except:
+        return False
+    form_key_regex = r'<input[^>]*name="form_key"[^>]*value="([^"]*)"[^>]*/>'
+    form_key = re.search(form_key_regex, archive_page.read()).group(1)
+
+    # csv_file is a reader object as defined in the `csv` module
+    csv_request_data = urllib.urlencode({"form_key" : form_key})
+    csv_request_url = "http://www.instapaper.com/export/csv"
+    csv_request = urllib2.Request(csv_request_url, csv_request_data)
+    try:
+        csv_file = urllib2.urlopen(csv_request)
+    except:
+        return False
+
+    # Assemble and return the list of dictionaries
+    list = []
+    for line in csv.reader(csv_file):
+        dictionary = dict(zip(("url", "title", "description", "folder"), line))
+        if dictionary["url"] != "URL" and dictionary["folder"] == "Archive":
+            del dictionary["folder"]
+            list.append(dictionary)
+    return list
+
 def main():
     # Parse arguments with getopt
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hr", ["help", "rss"])
+        opts, args = getopt.getopt(sys.argv[1:], "hre", ["help", "rss", "export"])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -86,7 +118,9 @@ def main():
         elif opt in ("-r", "--rss"):
             login(instapaper_username, instapaper_password)
             fetch_via_rss()
-            pass
+        elif opt in ("-e", "--export"):
+            login(instapaper_username, instapaper_password)
+            fetch_via_export()
 
 if __name__ == "__main__":
     main()
