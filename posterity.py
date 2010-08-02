@@ -3,12 +3,32 @@
 import sys
 import getopt
 import urllib
+import urllib2
+import cookielib
 import xml.dom.minidom
 
 instapaper_archive_rss = ""
+instapaper_username = ""
+instapaper_password = ""
 
 def usage():
     pass
+
+def login(username, password):
+    """Login to instapaper.  If successful, returns True."""
+    data = urllib.urlencode({"username" : username, "password" : password})
+    request = urllib2.Request('http://www.instapaper.com/user/login', data)
+
+    try:
+        response = urllib2.urlopen(request)
+    except:
+        return False
+
+    # Bit of a hack: instapaper only sets a cookie if login was successful
+    if response.info().getheader("Set-Cookie"):
+        return True
+    else:
+        return False
 
 def parse_node(item):
     """Take a node object representing a single <item> in the Instapaper RSS 
@@ -48,6 +68,11 @@ def main():
     # If no options have been given --rss is the default
     if not opts:
         opts = [("--rss", "")]
+
+    # Install a CookieJar
+    cookiejar = cookielib.CookieJar()
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookiejar))
+    urllib2.install_opener(opener)
 
     # What to do with given options
     for opt, arg in opts:
