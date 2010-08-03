@@ -31,20 +31,10 @@ def login(username, password):
     else:
         return False
 
-def parse_node(item):
-    """Take a node object representing a single <item> in the Instapaper RSS 
-    feed and return its information as a dictionary.
-    """
-    dict = {}
-    for field in ('title', 'link', 'description', 'pubDate'):
-        if item.getElementsByTagName(field)[0].hasChildNodes():
-            dict[field] = item.getElementsByTagName(field)[0].firstChild.data
-    return dict
-
 def fetch_via_rss():
-    """Fetch the instapaper Archive RSS feed and return a list containing Node
-    objects.  Each object in the list represents a single <item> in the RSS
-    feed.
+    """Fetch the instapaper Archive RSS feed and return a list containing 
+    dictionaries.  Each dictionary in the list represents a single <item> in
+    the RSS feed (i.e. a single saved article).
     """
     # Find out the URL to the RSS feed and store it in rss_url
     try:
@@ -54,13 +44,24 @@ def fetch_via_rss():
     rss_regex = r'"(http://www\.instapaper\.com/archive/rss/[^"]*)"'
     rss_url = re.search(rss_regex, archive_page.read()).group(1)
 
-    # Return a list of Node objects, each representing an <item>
+    # rss_dom is the entire RSS file as a Document object
     try:
         rss = urllib2.urlopen(rss_url)
     except:
         return False
     rss_dom = xml.dom.minidom.parse(rss)
-    return rss_dom.getElementsByTagName('item')
+
+    # Assemble and return the list of dictionaries
+    list = []
+    for item in rss_dom.getElementsByTagName('item'):
+        list.append(dict(zip(
+            ("title", "link", "description", "pubDate"),
+            [item.getElementsByTagName(field)[0].firstChild.data \
+             if item.getElementsByTagName(field)[0].hasChildNodes() \
+             else "" \
+             for field in ("title", "link", "description", "pubDate")]
+        )))
+    return list
 
 def fetch_via_export():
     """Fetch the CSV export file and return a list of dictionaries, where each 
