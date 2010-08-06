@@ -96,7 +96,7 @@ def fetch_via_export():
             list.append(dictionary)
     return list
 
-def init_db(database)
+def init_db(database):
     """Check that we can connect to the database and that the `archive` table 
     exists.  If successful, it returns a cursor object.
     """
@@ -105,15 +105,15 @@ def init_db(database)
     except:
         return False
     cursor = connection.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS archive (
-                        id INTEGER PRIMARY KEY,
-                        url TEXT UNIQUE NOT NULL,
-                        title TEXT,
-                        description TEXT,
-                        pubDate REAL,
-                        importDate REAL NOT NULL DEFAULT (julianday('now'))
-                    );")
-    cursor.commit()
+    cursor.execute("""CREATE TABLE IF NOT EXISTS archive (
+                          id INTEGER PRIMARY KEY,
+                          url TEXT UNIQUE NOT NULL,
+                          title TEXT,
+                          description TEXT,
+                          pubDate REAL,
+                          importDate REAL NOT NULL DEFAULT (julianday('now'))
+                      );""")
+    connection.commit()
     return cursor
 
 def main():
