@@ -124,26 +124,27 @@ def main():
         usage()
         sys.exit(2)
 
-    # If no options have been given --rss is the default
+    # Zero or no options are acceptable (if zero, then --rss is the default)
     if not opts:
         opts = [("--rss", "")]
+    elif len(opts) > 1:
+        usage()
+        sys.exit(2)
+
+    # If help has been requested then give it
+    if opts[0][0] in ("-h", "--help"):
+        usage()
+        sys.exit()
 
     # Install a CookieJar
     cookiejar = cookielib.CookieJar()
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookiejar))
     urllib2.install_opener(opener)
 
-    # What to do with given options
-    for opt, arg in opts:
-        if opt in ("-h", "--help"):
-            usage()
-            sys.exit()
-        elif opt in ("-r", "--rss"):
-            login(instapaper_username, instapaper_password)
-            fetch_via_rss()
-        elif opt in ("-e", "--export"):
-            login(instapaper_username, instapaper_password)
-            fetch_via_export()
+    # Initialise
+    login(instapaper_username, instapaper_password)
+    cursor = init_db(database)
+    articles = opts[0][0] in ("-r", "--rss") and fetch_via_rss() or fetch_via_export()
 
 if __name__ == "__main__":
     main()
