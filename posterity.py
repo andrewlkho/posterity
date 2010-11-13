@@ -102,25 +102,13 @@ def fetch_via_export():
             list.append(dictionary)
     return list
 
-def init_db(database):
-    """Check that we can connect to the database and that the `archive` table 
-    exists.  If successful, it returns a cursor object.
-    """
+def connect_db(database):
+    """Connect to the database and return a cursor object"""
     try:
         connection = sqlite3.connect(database)
     except:
         return False
-    cursor = connection.cursor()
-    cursor.execute("""CREATE TABLE IF NOT EXISTS archive (
-                          id INTEGER PRIMARY KEY,
-                          url TEXT UNIQUE NOT NULL,
-                          title TEXT,
-                          description TEXT,
-                          pubDate REAL,
-                          importDate REAL NOT NULL DEFAULT (julianday('now'))
-                      );""")
-    connection.commit()
-    return cursor
+    return connection.cursor()
 
 def main():
     # Parse arguments with getopt
@@ -142,9 +130,8 @@ def main():
         usage()
         sys.exit()
 
-    # Initialise
-    login(instapaper_username, instapaper_password)
-    cursor = init_db(database)
+    # Connect to the database
+    cursor = connect_db(database)
 
 if __name__ == "__main__":
     main()
