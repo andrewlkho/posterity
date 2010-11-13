@@ -19,6 +19,12 @@ def usage():
 
 def login(username, password):
     """Login to instapaper.  If successful, returns True."""
+    # Install a CookieJar
+    cookiejar = cookielib.CookieJar()
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookiejar))
+    urllib2.install_opener(opener)
+
+    # Build the request
     data = urllib.urlencode({"username" : username, "password" : password})
     request = urllib2.Request('http://www.instapaper.com/user/login', data)
 
@@ -136,15 +142,9 @@ def main():
         usage()
         sys.exit()
 
-    # Install a CookieJar
-    cookiejar = cookielib.CookieJar()
-    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookiejar))
-    urllib2.install_opener(opener)
-
     # Initialise
     login(instapaper_username, instapaper_password)
     cursor = init_db(database)
-    #articles = opts[0][0] in ("-r", "--rss") and fetch_via_rss() or fetch_via_export()
 
 if __name__ == "__main__":
     main()
