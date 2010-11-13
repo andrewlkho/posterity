@@ -18,12 +18,12 @@ def usage():
     pass
 
 def connect_db(database):
-    """Connect to the database and return a cursor object"""
+    """Connect to the database and return connection and cursor objects."""
     try:
         connection = sqlite3.connect(database)
     except:
         return False
-    return connection.cursor()
+    return connection, connection.cursor()
 
 def login(username, password):
     """Login to instapaper.  If successful, returns True."""
@@ -131,7 +131,8 @@ def main():
         sys.exit()
 
     # Connect to the database
-    cursor = connect_db(database)
+    global connection, cursor
+    connection, cursor = connect_db(database)
 
 if __name__ == "__main__":
     main()
