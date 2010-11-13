@@ -119,14 +119,14 @@ def init_db(database):
 def main():
     # Parse arguments with getopt
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hre", ["help", "rss", "export"])
+        opts, args = getopt.getopt(sys.argv[1:], "his:", ["help", "init", "source="])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
 
-    # Zero or no options are acceptable (if zero, then --rss is the default)
+    # Zero or no options are acceptable (if zero, then --source=rss is the default)
     if not opts:
-        opts = [("--rss", "")]
+        opts = [("--source", "rss")]
     elif len(opts) > 1:
         usage()
         sys.exit(2)
@@ -144,7 +144,7 @@ def main():
     # Initialise
     login(instapaper_username, instapaper_password)
     cursor = init_db(database)
-    articles = opts[0][0] in ("-r", "--rss") and fetch_via_rss() or fetch_via_export()
+    #articles = opts[0][0] in ("-r", "--rss") and fetch_via_rss() or fetch_via_export()
 
 if __name__ == "__main__":
     main()
