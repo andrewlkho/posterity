@@ -17,6 +17,14 @@ database = ""
 def usage():
     pass
 
+def connect_db(database):
+    """Connect to the database and return a cursor object"""
+    try:
+        connection = sqlite3.connect(database)
+    except:
+        return False
+    return connection.cursor()
+
 def login(username, password):
     """Login to instapaper.  If successful, returns True."""
     # Install a CookieJar
@@ -101,14 +109,6 @@ def fetch_via_export():
             del dictionary["folder"]
             list.append(dictionary)
     return list
-
-def connect_db(database):
-    """Connect to the database and return a cursor object"""
-    try:
-        connection = sqlite3.connect(database)
-    except:
-        return False
-    return connection.cursor()
 
 def main():
     # Parse arguments with getopt
