@@ -47,6 +47,47 @@ def login(username, password):
     else:
         return False
 
+def init_db(database):
+    """Create database schema and fill _metadata"""
+    # Create database schema
+    cursor.execute("""DROP TABLE IF EXISTS _metadata""")
+    cursor.execute("""DROP TABLE IF EXISTS archive""")
+    connection.commit()
+    cursor.execute("""CREATE TABLE _metadata (
+        key TEXT PRIMARY KEY NOT NULL,
+        value TEXT NOT NULL
+    )""")
+    cursor.execute("""CREATE TABLE archive (
+        id INTEGER PRIMARY KEY,
+        url TEXT UNIQUE NOT NULL,
+        title TEXT,
+        description TEXT,
+        pubDate REAL,
+        importDate REAL NOT NULL DEFAULT (julianday('now'))
+    )""")
+    connection.commit()
+
+    # Fetch the RSS feed URL and CSV form_key
+    try:
+        archive_page = urllib2.urlopen("http://www.instapaper.com/archive")
+    except:
+        sys.exit(1)
+    rss_url_regex = r'"(http://www\.instapaper\.com/archive/rss/[^"]*)"'
+    csv_form_key_regex = r'<input[^>]*name="form_key"[^>]*value="([^"]*)"[^>]*/>'
+    big_regex = rss_url_regex + ".*" + csv_form_key_regex
+    rss_url, csv_form_key = re.search(big_regex, archive_page.read(), re.DOTALL).group(1, 2)
+
+    # Insert rss_url and csv_form_key into the `_metadata` table
+    cursor.execute("""INSERT INTO _metadata (key, value) VALUES (
+        'rss_url', '%s'
+    )""" % rss_url)
+    cursor.execute("""INSERT INTO _metadata (key, value) VALUES (
+        'csv_form_key', '%s'
+    )""" % csv_form_key)
+    connection.commit()
+
+    return True
+
 def fetch_via_rss():
     """Fetch the instapaper Archive RSS feed and return a list containing 
     dictionaries.  Each dictionary in the list represents a single <item> in
@@ -133,6 +174,15 @@ def main():
     # Connect to the database
     global connection, cursor
     connection, cursor = connect_db(database)
+
+    # Perform the requested action(s)
+    for opt, arg in opts:
+        if opt in ("-i", "--init"):
+            login(instapaper_username, instapaper_password)
+            init_db(database)
+        else:
+            usage()
+            sys.exit(2)
 
 if __name__ == "__main__":
     main()
