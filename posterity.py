@@ -9,6 +9,7 @@ import cookielib
 import xml.dom.minidom
 import csv
 import sqlite3
+import datetime
 
 instapaper_username = ""
 instapaper_password = ""
@@ -94,12 +95,12 @@ def fetch_via_rss():
     the RSS feed (i.e. a single saved article).
     """
     # Find out the URL to the RSS feed and store it in rss_url
-    try:
-        archive_page = urllib2.urlopen("http://www.instapaper.com/archive")
-    except:
-        return False
-    rss_regex = r'"(http://www\.instapaper\.com/archive/rss/[^"]*)"'
-    rss_url = re.search(rss_regex, archive_page.read()).group(1)
+    cursor.execute("""SELECT value FROM _metadata WHERE key='rss_url'""")
+    result = cursor.fetchone()
+    if result is None:
+        print "The database has not been correctly initialised."
+        sys.exit(2)
+    rss_url = result[0]
 
     # rss_dom is the entire RSS file as a Document object
     try:
@@ -120,21 +121,21 @@ def fetch_via_rss():
         )))
     return list
 
-def fetch_via_export():
+def fetch_via_csv():
     """Fetch the CSV export file and return a list of dictionaries, where each 
     dictionary represents a single line in the CSV file (i.e. a single saved
     article).
     """
-    # Find out form_key
-    try:
-        archive_page = urllib2.urlopen("http://www.instapaper.com/archive")
-    except:
-        return False
-    form_key_regex = r'<input[^>]*name="form_key"[^>]*value="([^"]*)"[^>]*/>'
-    form_key = re.search(form_key_regex, archive_page.read()).group(1)
+    # Find out csv_form_key
+    cursor.execute("""SELECT value FROM _metadata WHERE key='csv_form_key'""")
+    result = cursor.fetchone()
+    if result is None:
+        print "The database has not been correctly initialised."
+        sys.exit(2)
+    csv_form_key = result[0]
 
     # csv_file is a reader object as defined in the `csv` module
-    csv_request_data = urllib.urlencode({"form_key" : form_key})
+    csv_request_data = urllib.urlencode({"form_key" : csv_form_key})
     csv_request_url = "http://www.instapaper.com/export/csv"
     csv_request = urllib2.Request(csv_request_url, csv_request_data)
     try:
@@ -180,6 +181,12 @@ def main():
         if opt in ("-i", "--init"):
             login(instapaper_username, instapaper_password)
             init_db(database)
+        elif opt in ("-s", "--source") and arg == "rss":
+            login(instapaper_username, instapaper_password)
+            print repr(fetch_via_rss())
+        elif opt in ("-s", "--source") and arg == "csv":
+            login(instapaper_username, instapaper_password)
+            print repr(fetch_via_csv())
         else:
             usage()
             sys.exit(2)
