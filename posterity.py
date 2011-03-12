@@ -113,7 +113,7 @@ def fetch_via_rss():
     list = []
     for item in rss_dom.getElementsByTagName('item'):
         list.append(dict(zip(
-            ("title", "link", "description", "pubDate"),
+            ("title", "url", "description", "pubDate"),
             [item.getElementsByTagName(field)[0].firstChild.data \
              if item.getElementsByTagName(field)[0].hasChildNodes() \
              else "" \
@@ -152,6 +152,41 @@ def fetch_via_csv():
             list.append(dictionary)
     return list
 
+def update_db(article):
+    """Take a dictionary representing a single article and insert it into the
+    database (if it's not already there).
+    """
+    # If the url is absent then something has gone wrong
+    if "url" not in article:
+        print "Error: url has disappeared!"
+        sys.exit(2)
+
+    # Hacky way to convert the pubDate into a UTC-based ISO8601 string
+    if "pubDate" in article and article["pubDate"]:
+        localdatetime = datetime.datetime.strptime(article["pubDate"][0:-4], "%a, %d %b %Y %H:%M:%S")
+        if article["pubDate"][-3:] == "EST":
+            utcdatetime = localdatetime + datetime.timedelta(0, 0, 0, 0, 0, 5)
+        elif article["pubDate"][-3:] == "EDT":
+            utcdatetime = localdatetime + datetime.timedelta(0, 0, 0, 0, 0, 4)
+        article["pubDate"] = utcdatetime.isoformat("T")
+
+    # Compile the INSERT statement
+    query = "INSERT OR IGNORE INTO archive (url, title, description, pubDate) VALUES ("
+    query += ", ".join(["?" if field in article and article[field] else "NULL"
+                        for field in ("url", "title", "description")])
+    if "pubDate" in article and article["pubDate"]:
+        query = ", ".join((query, "julianday('%s')" % article["pubDate"]))
+    else:
+        query = ", ".join((query, "NULL"))
+    query += ")"
+
+    # Execute the query
+    cursor.execute(query, [article[field].decode('utf-8')
+                           for field in ("url", "title", "description")
+                           if field in article and article[field]])
+
+    return True
+
 def main():
     # Parse arguments with getopt
     try:
@@ -183,10 +218,14 @@ def main():
             init_db(database)
         elif opt in ("-s", "--source") and arg == "rss":
             login(instapaper_username, instapaper_password)
-            print repr(fetch_via_rss())
+            for article in fetch_via_rss():
+                update_db(article)
+            connection.commit()
         elif opt in ("-s", "--source") and arg == "csv":
             login(instapaper_username, instapaper_password)
-            print repr(fetch_via_csv())
+            for article in fetch_via_csv():
+                update_db(article)
+            connection.commit()
         else:
             usage()
             sys.exit(2)
